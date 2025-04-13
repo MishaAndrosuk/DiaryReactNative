@@ -59,7 +59,7 @@ export default function Notes() {
 
   return (
     <View style={[styles.container, { backgroundColor: bg }]}> 
-      <Text style={[styles.heading, { color: text }]}>Мої мрії ✨</Text>
+      <Text style={[styles.heading, { color: text }]}>Мої думки ✨</Text>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {notes.map((note) => (
@@ -79,13 +79,13 @@ export default function Notes() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: card }]}>
             <Text style={[styles.modalTitle, { color: text }]}> 
-              {selectedNote ? 'Редагувати мрію' : 'Нова мрія'}
+              {selectedNote ? 'Редагувати думку' : 'Нова думка'}
             </Text>
 
             <TextInput
               value={noteText}
               onChangeText={setNoteText}
-              placeholder="Введи свою мрію..."
+              placeholder="Введи свою думку..."
               placeholderTextColor="#888"
               multiline
               style={[styles.input, { color: text, backgroundColor: bg, borderColor: '#ccc' }]}

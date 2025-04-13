@@ -11,12 +11,16 @@ import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { addTask, setTasks, updateTask, deleteTask } from '@/redux/slices/tasksSlice';
 import { getItems, addItem, updateItem, deleteItem } from '@/store/tasksDb';
 import { Task } from '@/types';
-import { View, Text } from '@/components/Themed';
+import { View, Text, useThemeColor } from '@/components/Themed';
+import { View as RNView } from 'react-native';
 
 
 export default function Diary() {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector(state => state.tasks.tasks);
+
+  const text = useThemeColor({}, 'text');
+  const background = useThemeColor({}, 'background');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editing, setEditing] = useState<null | Task>(null);
@@ -87,22 +91,39 @@ export default function Diary() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Всі події</Text>
+      <Text style={[styles.heading, { color: text }]}>Всі події</Text>
 
       <FlatList
         data={tasks}
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 100 }}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => openModal(item)}>
-            <Text style={styles.title}>{item.title}</Text>
-            {item.description ? (
-              <Text style={styles.description}>{item.description}</Text>
-            ) : null}
-            <Text style={styles.meta}>
-              {new Date(item.date).toLocaleString()}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.card}>
+            <RNView
+              style={{
+                backgroundColor: background,
+                padding: 10,
+                borderRadius: 8,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <View>
+                <Text style={[styles.title, { color: text }]}>{item.title}</Text>
+                {item.description ? (
+                  <Text style={[styles.description, { color: text }]}>{item.description}</Text>
+                ) : null}
+                <Text style={[styles.meta, { color: text }]}>
+                  {new Date(item.date).toLocaleString()}
+                </Text>
+              </View>
+
+              <TouchableOpacity onPress={() => openModal(item)}>
+                <Ionicons name="create-outline" size={24} color="#007AFF" />
+              </TouchableOpacity>
+            </RNView>
+          </View>
         )}
       />
 
@@ -112,27 +133,42 @@ export default function Diary() {
 
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
+          <View style={[styles.modalContent, { backgroundColor: background }]}>
+            <Text style={[styles.modalTitle, { color: text }]}>
               {editing ? 'Редагувати подію' : 'Нова подія'}
             </Text>
 
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: background,
+                  color: text,
+                },
+              ]}
               placeholder="Назва події"
+              placeholderTextColor="#888"
               value={title}
               onChangeText={setTitle}
             />
 
             <TextInput
-              style={[styles.input, { height: 80 }]}
+              style={[
+                styles.input,
+                {
+                  height: 80,
+                  backgroundColor: background,
+                  color: text,
+                },
+              ]}
               placeholder="Опис"
+              placeholderTextColor="#888"
               value={description}
               onChangeText={setDescription}
               multiline
             />
 
-            <Text style={styles.label}>Пріоритет:</Text>
+            <Text style={[styles.label, { color: text }]}>Пріоритет:</Text>
             <View style={styles.row}>
               {(['low', 'mid', 'high'] as const).map(p => (
                 <TouchableOpacity
@@ -140,12 +176,14 @@ export default function Diary() {
                   style={[styles.tag, priority === p && styles.selected]}
                   onPress={() => setPriority(p)}
                 >
-                  <Text style={priority === p ? styles.selectedText : undefined}>{p}</Text>
+                  <Text style={priority === p ? styles.selectedText : { color: text }}>
+                    {p}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.label}>Статус:</Text>
+            <Text style={[styles.label, { color: text }]}>Статус:</Text>
             <View style={styles.row}>
               {(['in progress', 'completed'] as const).map(s => (
                 <TouchableOpacity
@@ -153,7 +191,9 @@ export default function Diary() {
                   style={[styles.tag, status === s && styles.selected]}
                   onPress={() => setStatus(s)}
                 >
-                  <Text style={status === s ? styles.selectedText : undefined}>{s}</Text>
+                  <Text style={status === s ? styles.selectedText : { color: text }}>
+                    {s}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -169,7 +209,9 @@ export default function Diary() {
             )}
 
             <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={{ textAlign: 'center', marginTop: 10, color: '#888' }}>Скасувати</Text>
+              <Text style={{ textAlign: 'center', marginTop: 10, color: '#888' }}>
+                Скасувати
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -182,7 +224,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 60, paddingHorizontal: 20 },
   heading: { fontSize: 26, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   card: {
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 10,
     marginBottom: 10,
@@ -190,7 +231,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: '600' },
   description: { fontSize: 14, marginTop: 4 },
-  meta: { fontSize: 12, color: '#666', marginTop: 6 },
+  meta: { fontSize: 12, marginTop: 6 },
   fab: {
     position: 'absolute',
     right: 20,
@@ -210,18 +251,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
   },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
-    backgroundColor: '#fff',
   },
   label: { fontWeight: 'bold', marginBottom: 4 },
   row: { flexDirection: 'row', gap: 8, marginBottom: 12 },
