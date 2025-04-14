@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, useThemeColor } from '@/components/Themed';
-import { initNotes, getNotes, addNote, updateNote } from '@/store/notesDb';
+import { initNotes, getNotes, addNote, updateNote, deleteNote } from '@/store/notesDb'; 
 import type { Note } from '@/store/notesDb';
 
 export default function Notes() {
@@ -57,8 +57,19 @@ export default function Notes() {
     setSelectedNote(null);
   };
 
+  const deleteNoteHandler = async () => {
+    if (!selectedNote) return;
+
+    await deleteNote(selectedNote.id);
+    const data = await getNotes();
+    setNotes(data);
+    setModalVisible(false);
+    setNoteText('');
+    setSelectedNote(null);
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: bg }]}> 
+    <View style={[styles.container, { backgroundColor: bg }]}>
       <Text style={[styles.heading, { color: text }]}>Мої думки ✨</Text>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
@@ -78,7 +89,7 @@ export default function Notes() {
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: card }]}>
-            <Text style={[styles.modalTitle, { color: text }]}> 
+            <Text style={[styles.modalTitle, { color: text }]}>
               {selectedNote ? 'Редагувати думку' : 'Нова думка'}
             </Text>
 
@@ -94,6 +105,12 @@ export default function Notes() {
             <TouchableOpacity style={styles.saveButton} onPress={saveNote}>
               <Text style={styles.buttonText}>Зберегти</Text>
             </TouchableOpacity>
+
+            {selectedNote && (
+              <TouchableOpacity style={styles.deleteButton} onPress={deleteNoteHandler}>
+                <Text style={styles.buttonText}>Видалити</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity onPress={() => setModalVisible(false)} style={{ marginTop: 10 }}>
               <Text style={{ textAlign: 'center', color: '#888' }}>Скасувати</Text>
@@ -171,6 +188,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     padding: 14,
     borderRadius: 10,
+  },
+  deleteButton: {
+    backgroundColor: '#ff3b30',
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 10,
   },
   buttonText: {
     color: '#fff',

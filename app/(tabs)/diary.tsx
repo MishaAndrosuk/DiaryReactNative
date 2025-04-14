@@ -5,15 +5,17 @@ import {
   Modal,
   TextInput,
   StyleSheet,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { addTask, setTasks, updateTask, deleteTask } from '@/redux/slices/tasksSlice';
-import { getItems, addItem, updateItem, deleteItem } from '@/store/tasksDb';
+import { getItems, addItem, updateItem, deleteItem, init } from '@/store/tasksDb';
 import { Task } from '@/types';
 import { View, Text, useThemeColor } from '@/components/Themed';
 import { View as RNView } from 'react-native';
-
+import * as FileSystem from 'expo-file-system'; // для resetDB
 
 export default function Diary() {
   const dispatch = useAppDispatch();
@@ -28,9 +30,13 @@ export default function Diary() {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'mid' | 'high'>('mid');
   const [status, setStatus] = useState<'in progress' | 'completed'>('in progress');
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showDateModal, setShowDateModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
+      await init();
       const data = await getItems();
       dispatch(setTasks(data));
     };
@@ -38,25 +44,28 @@ export default function Diary() {
   }, []);
 
   const openModal = (task?: Task) => {
+    setShowDatePicker(false);
     if (task) {
       setEditing(task);
       setTitle(task.title);
       setDescription(task.description || '');
       setPriority(task.priority);
       setStatus(task.status);
+      setDate(new Date(task.date));
     } else {
       setEditing(null);
       setTitle('');
       setDescription('');
       setPriority('mid');
       setStatus('in progress');
+      setDate(new Date());
     }
     setModalVisible(true);
   };
 
   const handleSave = async () => {
     if (!title.trim()) return;
-    const now = new Date();
+    console.log('Saving...');
 
     if (editing) {
       const updated: Task = {
@@ -65,20 +74,29 @@ export default function Diary() {
         description,
         priority,
         status,
+        date: date.toISOString(),
       };
       await updateItem(updated);
       dispatch(updateTask(updated));
+      console.log('Updated:', updated);
     } else {
       const taskData = {
         title,
         description,
-        date: now.toISOString(),
+        date: date.toISOString(),
         priority,
         status,
       };
-      await addItem(taskData);
-      dispatch(addTask({ id: Date.now(), ...taskData }));
+      try {
+        const id = await addItem(taskData);
+        console.log('Inserted ID:', id);
+        dispatch(addTask({ id, ...taskData }));
+        console.log('Added:', { id, ...taskData });
+      } catch (e) {
+        console.error('❌ addItem error:', e);
+      }
     }
+
     setModalVisible(false);
   };
 
@@ -139,13 +157,7 @@ export default function Diary() {
             </Text>
 
             <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: background,
-                  color: text,
-                },
-              ]}
+              style={[styles.input, { backgroundColor: background, color: text }]}
               placeholder="Назва події"
               placeholderTextColor="#888"
               value={title}
@@ -153,20 +165,34 @@ export default function Diary() {
             />
 
             <TextInput
-              style={[
-                styles.input,
-                {
-                  height: 80,
-                  backgroundColor: background,
-                  color: text,
-                },
-              ]}
+              style={[styles.input, { height: 80, backgroundColor: background, color: text }]}
               placeholder="Опис"
               placeholderTextColor="#888"
               value={description}
               onChangeText={setDescription}
               multiline
             />
+
+            <Text style={[styles.label, { color: text }]}>Дата:</Text>
+
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
+              <Text style={{ color: text }}>
+                {date.toLocaleDateString()} {date.toLocaleTimeString()}
+              </Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={date}
+                mode="datetime"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) setDate(selectedDate);  
+                }}
+              />
+            )}
+
 
             <Text style={[styles.label, { color: text }]}>Пріоритет:</Text>
             <View style={styles.row}>
@@ -274,4 +300,23 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: '#007AFF', padding: 14, borderRadius: 8 },
   deleteButton: { backgroundColor: '#ff3b30', padding: 14, borderRadius: 8, marginTop: 10 },
   buttonText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
+  dateButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  dateModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#00000066',
+  },
+  dateModalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    elevation: 10,
+  },
+
 });

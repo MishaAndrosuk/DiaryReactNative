@@ -6,6 +6,7 @@ import { TasksProvider } from '../context/TasksContext';
 import { Provider } from 'react-redux';
 import { store } from '../redux/store';
 import { ThemeProvider } from '@/context/ThemeContext';
+import * as FileSystem from 'expo-file-system';
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
